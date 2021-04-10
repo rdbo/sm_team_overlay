@@ -15,7 +15,7 @@ public Plugin my_info =
 	url = ""
 }
 
-int g_TeamColor[2][4] = {{255, 150, 150, 255}, {150, 150, 255, 255}};
+int g_TeamColor[2][4] = {{255, 150, 100, 255}, {100, 150, 255, 255}};
 
 public void SetPlayerColor(int client, int r, int g, int b, int a)
 {
