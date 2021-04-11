@@ -15,71 +15,74 @@ public Plugin my_info =
 	url = ""
 }
 
-int g_TeamColor[2][4] = {{255, 150, 100, 255}, {100, 150, 255, 255}};
-
-public void SetPlayerColor(int client, int r, int g, int b, int a)
+public void UpdatePlayerColor(int client)
 {
-	SetEntityRenderMode(client, RENDER_NORMAL);
-	SetEntityRenderColor(client, r, g, b, a);
-}
+	ConVar gcv_OverlayEnabled = FindConVar("sm_overlay_enabled");
 
-public void UpdateColor(int client)
-{
-	int overlay_state = FindConVar("sm_overlay_enable").IntValue;
+	if (gcv_OverlayEnabled.IntValue == 0 || !IsClientInGame(client) || !IsPlayerAlive(client))
+		return;
 
-	if (IsClientInGame(client) && IsPlayerAlive(client))
+	int team = GetClientTeam(client);
+
+	int red = 255;
+	int green = 255;
+	int blue = 255;
+	int alpha = 255;
+
+	switch (team)
 	{
-		if (overlay_state == 0)
+		case CS_TEAM_T:
 		{
-			SetPlayerColor(client, 255, 255, 255, 255);
-			return;
+			red   = FindConVar("sm_overlay_t_r").IntValue;
+			green = FindConVar("sm_overlay_t_g").IntValue;
+			blue  = FindConVar("sm_overlay_t_b").IntValue;
+			alpha = FindConVar("sm_overlay_t_a").IntValue;
 		}
 
-		int team = GetClientTeam(client);
-
-		switch(team)
+		case CS_TEAM_CT:
 		{
-			case CS_TEAM_T:
-			{
-				SetPlayerColor(client, g_TeamColor[0][0], g_TeamColor[0][1], g_TeamColor[0][2], g_TeamColor[0][3]);
-			}
-
-			case CS_TEAM_CT:
-			{
-				SetPlayerColor(client, g_TeamColor[1][0], g_TeamColor[1][1], g_TeamColor[1][2], g_TeamColor[1][3]);
-			}
+			red   = FindConVar("sm_overlay_ct_r").IntValue;
+			green = FindConVar("sm_overlay_ct_g").IntValue;
+			blue  = FindConVar("sm_overlay_ct_b").IntValue;
+			alpha = FindConVar("sm_overlay_ct_a").IntValue;
 		}
 	}
-}
 
-public void UpdateColors()
-{
-	for (int i = 1; i < MaxClients; ++i)
-	{
-		UpdateColor(i);
-	}
-}
+	int active_red, active_green, active_blue, active_alpha;
+	RenderMode rm = GetEntityRenderMode(client);
+	GetEntityRenderColor(client, active_red, active_green, active_blue, active_alpha);
 
-public Action CMD_UpdateColors(int client, int args)
-{
-	UpdateColors();
+	ConVar ignore_alpha = FindConVar("sm_overlay_ignore_alpha");
+	if (ignore_alpha.IntValue)
+		alpha = active_alpha;
 
-	ReplyToCommand(client, "[SM] Colors Updated");
+	bool unchanged_check = (red == active_red && green == active_green && blue == active_blue && alpha == active_alpha);
 
-	return Plugin_Handled;
+	if (unchanged_check)
+		return;
+
+	SetEntityRenderColor(client, red, green, blue, active_alpha);
 }
 
 public void OnPluginStart()
 {
 	PrintToServer("[SM] Team Color Overlay has been loaded");
-	CreateConVar("sm_overlay_enable", "1", "Team Overlay Toggle State");
-	RegAdminCmd("sm_updatecolors", CMD_UpdateColors, ADMFLAG_ROOT, "Update Player Colors");
+	CreateConVar("sm_overlay_enabled", "1", "Team Overlay Toggle State");
+	CreateConVar("sm_overlay_ignore_alpha", "1", "Ignore Alpha Value");
+	CreateConVar("sm_overlay_t_r", "255", "Terrorist Team Red Value");
+	CreateConVar("sm_overlay_t_g", "155", "Terrorist Team Green Value");
+	CreateConVar("sm_overlay_t_b", "105", "Terrorist Team Blue Value");
+	CreateConVar("sm_overlay_t_a", "255", "Terrorist Team Alpha Value");
+	CreateConVar("sm_overlay_ct_r", "105", "Counter-Terrorists Team Red Value");
+	CreateConVar("sm_overlay_ct_g", "155", "Counter-Terrorists Team Green Value");
+	CreateConVar("sm_overlay_ct_b", "255", "Counter-Terrorists Team Blue Value");
+	CreateConVar("sm_overlay_ct_a", "255", "Counter-Terrorists Team Alpha Value");
 	HookEvent("player_spawn", UpdateColorsHook);
 }
 
 public void UpdateColorHook(int client)
 {
-	UpdateColor(client);
+	UpdatePlayerColor(client);
 }
 
 public Action UpdateColorsHook(Event event, const char[] name, bool dontBroadcast)
