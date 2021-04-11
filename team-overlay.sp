@@ -61,7 +61,7 @@ public void UpdatePlayerColor(int client)
 	if (unchanged_check)
 		return;
 
-	SetEntityRenderColor(client, red, green, blue, active_alpha);
+	SetEntityRenderColor(client, red, green, blue, alpha);
 }
 
 public void OnPluginStart()
