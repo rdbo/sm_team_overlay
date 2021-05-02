@@ -15,10 +15,19 @@ public Plugin my_info =
 	url = ""
 }
 
+ConVar gcv_OverlayEnabled;
+ConVar gcv_IgnoreAlpha;
+ConVar gcv_Overlay_T_R;
+ConVar gcv_Overlay_T_G;
+ConVar gcv_Overlay_T_B;
+ConVar gcv_Overlay_T_A;
+ConVar gcv_Overlay_CT_R;
+ConVar gcv_Overlay_CT_G;
+ConVar gcv_Overlay_CT_B;
+ConVar gcv_Overlay_CT_A;
+
 public void UpdatePlayerColor(int client)
 {
-	ConVar gcv_OverlayEnabled = FindConVar("sm_overlay_enabled");
-
 	if (gcv_OverlayEnabled.IntValue == 0 || !IsClientInGame(client) || !IsPlayerAlive(client))
 		return;
 
@@ -33,27 +42,25 @@ public void UpdatePlayerColor(int client)
 	{
 		case CS_TEAM_T:
 		{
-			red   = FindConVar("sm_overlay_t_r").IntValue;
-			green = FindConVar("sm_overlay_t_g").IntValue;
-			blue  = FindConVar("sm_overlay_t_b").IntValue;
-			alpha = FindConVar("sm_overlay_t_a").IntValue;
+			red   = gcv_Overlay_T_R.IntValue;
+			green = gcv_Overlay_T_G.IntValue;
+			blue  = gcv_Overlay_T_B.IntValue;
+			alpha = gcv_Overlay_T_A.IntValue;
 		}
 
 		case CS_TEAM_CT:
 		{
-			red   = FindConVar("sm_overlay_ct_r").IntValue;
-			green = FindConVar("sm_overlay_ct_g").IntValue;
-			blue  = FindConVar("sm_overlay_ct_b").IntValue;
-			alpha = FindConVar("sm_overlay_ct_a").IntValue;
+			red   = gcv_Overlay_CT_R.IntValue;
+			green = gcv_Overlay_CT_G.IntValue;
+			blue  = gcv_Overlay_CT_B.IntValue;
+			alpha = gcv_Overlay_CT_A.IntValue;
 		}
 	}
 
 	int active_red, active_green, active_blue, active_alpha;
-	RenderMode rm = GetEntityRenderMode(client);
 	GetEntityRenderColor(client, active_red, active_green, active_blue, active_alpha);
 
-	ConVar ignore_alpha = FindConVar("sm_overlay_ignore_alpha");
-	if (ignore_alpha.IntValue)
+	if (gcv_IgnoreAlpha.IntValue)
 		alpha = active_alpha;
 
 	bool unchanged_check = (red == active_red && green == active_green && blue == active_blue && alpha == active_alpha);
@@ -67,17 +74,16 @@ public void UpdatePlayerColor(int client)
 public void OnPluginStart()
 {
 	PrintToServer("[SM] Team Color Overlay has been loaded");
-	CreateConVar("sm_overlay_enabled", "1", "Team Overlay Toggle State");
-	CreateConVar("sm_overlay_ignore_alpha", "1", "Ignore Alpha Value");
-	CreateConVar("sm_overlay_t_r", "255", "Terrorist Team Red Value");
-	CreateConVar("sm_overlay_t_g", "155", "Terrorist Team Green Value");
-	CreateConVar("sm_overlay_t_b", "105", "Terrorist Team Blue Value");
-	CreateConVar("sm_overlay_t_a", "255", "Terrorist Team Alpha Value");
-	CreateConVar("sm_overlay_ct_r", "105", "Counter-Terrorists Team Red Value");
-	CreateConVar("sm_overlay_ct_g", "155", "Counter-Terrorists Team Green Value");
-	CreateConVar("sm_overlay_ct_b", "255", "Counter-Terrorists Team Blue Value");
-	CreateConVar("sm_overlay_ct_a", "255", "Counter-Terrorists Team Alpha Value");
-	HookEvent("player_spawn", UpdateColorsHook);
+	gcv_OverlayEnabled = CreateConVar("sm_overlay_enabled", "1", "Team Overlay Toggle State");
+	gcv_IgnoreAlpha = CreateConVar("sm_overlay_ignore_alpha", "1", "Ignore Alpha Value");
+	gcv_Overlay_T_R = CreateConVar("sm_overlay_t_r", "255", "Terrorist Team Red Value");
+	gcv_Overlay_T_G = CreateConVar("sm_overlay_t_g", "155", "Terrorist Team Green Value");
+	gcv_Overlay_T_B = CreateConVar("sm_overlay_t_b", "105", "Terrorist Team Blue Value");
+	gcv_Overlay_T_A = CreateConVar("sm_overlay_t_a", "255", "Terrorist Team Alpha Value");
+	gcv_Overlay_CT_R = CreateConVar("sm_overlay_ct_r", "105", "Counter-Terrorists Team Red Value");
+	gcv_Overlay_CT_G = CreateConVar("sm_overlay_ct_g", "155", "Counter-Terrorists Team Green Value");
+	gcv_Overlay_CT_B = CreateConVar("sm_overlay_ct_b", "255", "Counter-Terrorists Team Blue Value");
+	gcv_Overlay_CT_A = CreateConVar("sm_overlay_ct_a", "255", "Counter-Terrorists Team Alpha Value");
 }
 
 public void UpdateColorHook(int client)
@@ -85,8 +91,12 @@ public void UpdateColorHook(int client)
 	UpdatePlayerColor(client);
 }
 
-public Action UpdateColorsHook(Event event, const char[] name, bool dontBroadcast)
+public void OnClientPutInServer(int client)
 {	
-	int client = GetClientOfUserId(event.GetInt("userId"));
 	SDKHook(client, SDKHook_PostThinkPost, UpdateColorHook);
+}
+
+public void OnClientDisconnect(int client)
+{
+    SDKUnhook(client, SDKHook_PostThinkPost, UpdateColorHook);
 }
