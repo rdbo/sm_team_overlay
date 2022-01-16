@@ -32,6 +32,8 @@ public void UpdatePlayerColor(int client)
 		return;
 
 	int team = GetClientTeam(client);
+	if (team < CS_TEAM_T)
+		return;
 
 	int red = 255;
 	int green = 255;
@@ -86,17 +88,7 @@ public void OnPluginStart()
 	gcv_Overlay_CT_A = CreateConVar("sm_overlay_ct_a", "255", "Counter-Terrorists Team Alpha Value");
 }
 
-public void UpdateColorHook(int client)
+public void OnPlayerRunCmdPost(int client, int buttons, int impulse, const float vel[3], const float angles[3], int weapon, int subtype, int cmdnum, int tickcount, int seed, const int mouse[2])
 {
-	UpdatePlayerColor(client);
-}
-
-public void OnClientPutInServer(int client)
-{	
-	SDKHook(client, SDKHook_PostThinkPost, UpdateColorHook);
-}
-
-public void OnClientDisconnect(int client)
-{
-    SDKUnhook(client, SDKHook_PostThinkPost, UpdateColorHook);
+    UpdatePlayerColor(client);
 }
